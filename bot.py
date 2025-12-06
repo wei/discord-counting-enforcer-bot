@@ -5,6 +5,7 @@ Manages a counting channel with strict rule enforcement.
 """
 
 import os
+import sys
 import discord
 from discord.ext import commands
 
@@ -12,15 +13,15 @@ from discord.ext import commands
 class CountingBot(commands.Bot):
     """Discord bot for enforcing counting rules."""
     
-    def __init__(self):
+    def __init__(self, server_id: int, channel_id: int):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.guilds = True
         super().__init__(command_prefix="!", intents=intents)
         
         # Configuration from environment variables
-        self.server_id = int(os.environ["DISCORD_SERVER_ID"])
-        self.channel_id = int(os.environ["COUNTING_CHANNEL_ID"])
+        self.server_id = server_id
+        self.channel_id = channel_id
         
         # In-memory state
         self.count = None  # Current count (integer or None)
@@ -47,6 +48,12 @@ class CountingBot(commands.Bot):
         
         # Get message content
         content = message.content.strip()
+        
+        # Handle empty messages
+        if not content:
+            if self.count is not None:
+                await message.delete()
+            return
         
         # Rule 1: Strict numeric check - content must consist strictly of digits
         if not content.isdigit():
@@ -96,13 +103,15 @@ def main():
     
     if missing_vars:
         print(f"Error: Missing required environment variables: {', '.join(missing_vars)}")
-        exit(1)
+        sys.exit(1)
     
-    # Get Discord token
+    # Get Discord token and IDs
     token = os.environ["DISCORD_TOKEN"]
+    server_id = int(os.environ["DISCORD_SERVER_ID"])
+    channel_id = int(os.environ["COUNTING_CHANNEL_ID"])
     
     # Create and run bot
-    bot = CountingBot()
+    bot = CountingBot(server_id, channel_id)
     bot.run(token)
 
 
