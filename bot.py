@@ -34,7 +34,16 @@ class CountingBot(commands.Bot):
         print(f"Monitoring channel ID: {self.channel_id}")
     
     async def on_message(self, message: discord.Message):
-        """Handle incoming messages."""
+        """Handle incoming messages and enforce counting rules.
+        
+        Rules enforced (after initialization):
+        1. Strict numeric check - digits only
+        2. Positive check - must be > 0
+        3. Increment check - must equal count + 1
+        4. Author lock - must differ from previous author
+        
+        Invalid messages are deleted. State updates only on success.
+        """
         # Ignore bot's own messages
         if message.author == self.user:
             return
