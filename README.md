@@ -17,6 +17,31 @@ The bot requires the following environment variables:
 - `DISCORD_SERVER_ID`: The ID of the Discord server to monitor
 - `COUNTING_CHANNEL_ID`: The ID of the counting channel to monitor
 
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Example values:
+
+```env
+DISCORD_TOKEN=your_bot_token_here
+DISCORD_SERVER_ID=123456789012345678
+COUNTING_CHANNEL_ID=123456789012345678
+```
+
+## Running with Docker Compose
+
+```bash
+# copy and edit environment
+cp .env.example .env
+# build and start
+docker compose up --build -d
+# view logs
+docker compose logs -f bot
+```
+
 ## Running with Docker
 
 ```bash

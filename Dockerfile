@@ -3,6 +3,9 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Ensure Python output (prints/logs) is unbuffered so Docker logs show immediately
+ENV PYTHONUNBUFFERED=1
+
 # Copy requirements first for better caching
 COPY requirements.txt .
 
