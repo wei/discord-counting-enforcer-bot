@@ -12,5 +12,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy bot code
 COPY bot.py .
 
+# Create a non-privileged user and set ownership
+RUN useradd -m bot && chown -R bot /app
+
+# Switch to non-root user
+USER bot
 # Run the bot
 CMD ["python", "bot.py"]
