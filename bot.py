@@ -9,6 +9,7 @@ import re
 import sys
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
 
 class CountingBot(commands.Bot):
@@ -113,6 +114,8 @@ class CountingBot(commands.Bot):
 
 def main():
     """Main entry point."""
+    load_dotenv() # Load environment variables from .env file
+
     # Validate required environment variables
     required_vars = ["DISCORD_TOKEN", "DISCORD_SERVER_ID", "COUNTING_CHANNEL_ID"]
     missing_vars = [var for var in required_vars if var not in os.environ]
