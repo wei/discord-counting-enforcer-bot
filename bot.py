@@ -5,6 +5,7 @@ Manages a counting channel with strict rule enforcement.
 """
 
 import os
+import re
 import sys
 import discord
 from discord.ext import commands
@@ -37,10 +38,9 @@ class CountingBot(commands.Bot):
         """Handle incoming messages and enforce counting rules.
         
         Rules enforced (after initialization):
-        1. Strict numeric check - digits only
-        2. Positive check - must be > 0
-        3. Increment check - must equal count + 1
-        4. Author lock - must differ from previous author
+        1. Strict numeric check - ASCII digits only (0-9)
+        2. Increment check - must equal count + 1
+        3. Author lock - must differ from previous author
         
         Invalid messages are deleted. State updates only on success.
         """
@@ -61,23 +61,25 @@ class CountingBot(commands.Bot):
         # Handle empty messages
         if not content:
             if self.count is not None:
-                await message.delete()
+                try:
+                    await message.delete()
+                except (discord.errors.Forbidden, discord.errors.NotFound):
+                    print(f"Failed to delete message {message.id}")
             return
         
-        # Rule 1: Strict numeric check - content must consist strictly of digits
-        if not content.isdigit():
+        # Rule 1: Strict numeric check - content must consist strictly of ASCII digits
+        # Using regex ensures only 0-9 digits are accepted (excludes Unicode digits)
+        # This also implicitly ensures the number is positive (no leading zeros or negatives)
+        if not re.match(r'^[0-9]+$', content):
             if self.count is not None:  # Only delete if state is initialized
-                await message.delete()
+                try:
+                    await message.delete()
+                except (discord.errors.Forbidden, discord.errors.NotFound):
+                    print(f"Failed to delete message {message.id}")
             return
         
-        # Parse the integer
+        # Parse the integer (guaranteed to be positive due to regex)
         parsed_number = int(content)
-        
-        # Rule 2: Positive check - must be greater than zero
-        if parsed_number <= 0:
-            if self.count is not None:  # Only delete if state is initialized
-                await message.delete()
-            return
         
         # Initial state handling
         if self.count is None:
@@ -87,15 +89,21 @@ class CountingBot(commands.Bot):
             print(f"State initialized: count={self.count}, author={self.previous_author_id}")
             return
         
-        # Rule 3: Increment check - must equal count + 1
+        # Rule 2: Increment check - must equal count + 1
         if parsed_number != self.count + 1:
-            await message.delete()
+            try:
+                await message.delete()
+            except (discord.errors.Forbidden, discord.errors.NotFound):
+                print(f"Failed to delete message {message.id}")
             return
         
-        # Rule 4: Author lock - author must not be the same as previous
+        # Rule 3: Author lock - author must not be the same as previous
         current_author_id = str(message.author.id)
         if current_author_id == self.previous_author_id:
-            await message.delete()
+            try:
+                await message.delete()
+            except (discord.errors.Forbidden, discord.errors.NotFound):
+                print(f"Failed to delete message {message.id}")
             return
         
         # All rules passed - update state
@@ -116,12 +124,25 @@ def main():
     
     # Get Discord token and IDs
     token = os.environ["DISCORD_TOKEN"]
-    server_id = int(os.environ["DISCORD_SERVER_ID"])
-    channel_id = int(os.environ["COUNTING_CHANNEL_ID"])
+    
+    try:
+        server_id = int(os.environ["DISCORD_SERVER_ID"])
+        channel_id = int(os.environ["COUNTING_CHANNEL_ID"])
+    except ValueError:
+        print("Error: DISCORD_SERVER_ID and COUNTING_CHANNEL_ID must be valid integers")
+        sys.exit(1)
     
     # Create and run bot
     bot = CountingBot(server_id, channel_id)
-    bot.run(token)
+    
+    try:
+        bot.run(token)
+    except discord.errors.LoginFailure:
+        print("Error: Invalid Discord token")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: Bot failed to start: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
