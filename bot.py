@@ -69,7 +69,6 @@ class CountingBot(commands.Bot):
         
         # Rule 1: Strict numeric check - content must consist strictly of ASCII digits
         # Using regex ensures only 0-9 digits are accepted (excludes Unicode digits)
-        # This also implicitly ensures the number is positive (no leading zeros or negatives)
         if not re.match(r'^[0-9]+$', content):
             if self.count is not None:  # Only delete if state is initialized
                 try:
@@ -128,8 +127,8 @@ def main():
     try:
         server_id = int(os.environ["DISCORD_SERVER_ID"])
         channel_id = int(os.environ["COUNTING_CHANNEL_ID"])
-    except ValueError:
-        print("Error: DISCORD_SERVER_ID and COUNTING_CHANNEL_ID must be valid integers")
+    except ValueError as e:
+        print(f"Error: Invalid integer value in environment variables ({e})")
         sys.exit(1)
     
     # Create and run bot
